@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arena completa · Clash Royale</title>
+  <!-- Mismo A-Frame local que usa index.html, para no depender de internet. -->
+  <script src="aframe.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    a-scene { position: absolute; inset: 0; }
+
+    #volver {
+      position: absolute; top: 16px; left: 16px; z-index: 20;
+      pointer-events: auto; cursor: pointer;
+      border: 1px solid rgba(168,85,247,0.6);
+      background: rgba(15,7,30,0.85);
+      color: #f3e9ff; border-radius: 8px;
+      padding: 9px 16px; font-size: 14px;
+      transition: background 0.15s;
+    }
+    #volver:hover { background: rgba(168,85,247,0.35); }
+
+    #botonMusica {
+      position: absolute; top: 16px; right: 16px; z-index: 20;
+      pointer-events: auto; cursor: pointer;
+      border: 1px solid rgba(168,85,247,0.6);
+      background: rgba(15,7,30,0.85);
+      color: #f3e9ff; border-radius: 50%;
+      width: 38px; height: 38px; font-size: 17px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    #botonMusica:hover { background: rgba(168,85,247,0.35); }
+
+    /* Mismo fundido morado que usa el portal del cofre en index.html, para
+       que la ida y la vuelta se sientan iguales. */
+    #transicionPortal {
+      position: absolute; inset: 0; z-index: 40; pointer-events: none;
+      background: radial-gradient(circle, rgba(168,85,247,0.95), rgba(10,4,20,1) 75%);
+      opacity: 1; transition: opacity 0.75s ease;
+    }
+    #transicionPortal.oculto { opacity: 0; }
+
+    /* ---------- Aviso: A-Frame no cargó ---------- */
+    #avisoError {
+      display: none;
+      position: absolute; inset: 0; z-index: 30;
+      align-items: center; justify-content: center;
+      background: rgba(10,4,20,0.92); padding: 20px;
+    }
+    #avisoError .caja {
+      max-width: 520px; background: #2a1010;
+      border: 1px solid #e74c3c; border-radius: 14px;
+      padding: 26px; color: #ffe3e3;
+    }
+    #avisoError h2 { margin-top: 0; color: #ff8a8a; font-size: 17px; }
+    #avisoError p, #avisoError li { font-size: 14px; line-height: 1.6; }
+    #avisoError code { background: rgba(255,255,255,0.12); padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <button id="volver">‹ Volver a Arena 13</button>
+  <button id="botonMusica" title="Silenciar/activar música">🔊</button>
+
+  <!-- Música de fondo, en bucle. Guarda tu canción en assets/ con este
+       mismo nombre (o cambia el "src" por el que prefieras). -->
+  <audio id="musicaArena" src="assets/musica_arena.mp3" loop></audio>
+
+  <!-- Empieza opaco (morado) y se desvanece apenas carga, como si se
+       "cerrara" el portal por el que se entró desde index.html. -->
+  <div id="transicionPortal"></div>
+
+  <a-scene>
+    <a-assets>
+      <!-- La arena completa de Clash Royale, en piezas .glb. Agrega aquí
+           tantos <a-asset-item> como archivos tengas — uno por cada parte
+           del modelo — y luego una <a-entity gltf-model="#suId"> por cada
+           uno más abajo, igual que con arenaParte1 de ejemplo. -->
+      <a-asset-item id="arenaParte1" src="assets/arena.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- Arena completa. Ajusta escala/posición según el tamaño real de tu
+       modelo (mismo procedimiento que se usó con liebre.glb/tortuga.glb en
+       index.html: si el modelo se ve enterrado o gigante, se corrige aquí). -->
+    <a-entity id="arenaCompleta" gltf-model="#arenaParte1" scale="1 1 1" position="0 0 0" rotation="0 0 0"></a-entity>
+
+    <!-- Si tienes más archivos .glb para otras partes de la arena, cada uno
+         se agrega igual: un <a-asset-item> arriba en <a-assets> y aquí abajo
+         una entidad más, por ejemplo:
+    <a-entity gltf-model="#arenaParte2" scale="1 1 1" position="0 0 0"></a-entity>
+    -->
+
+    <!-- Piso de referencia, por si tu modelo no trae uno propio -->
+    <a-circle radius="20" rotation="-90 0 0" position="0 -0.01 0"
+              material="color:#2f2440; roughness:1"></a-circle>
+
+    <!-- Luces -->
+    <a-entity light="type: directional; intensity: 0.9; castShadow: true" position="6 10 4"></a-entity>
+    <a-entity light="type: ambient; intensity: 0.6; color: #cbb3ff"></a-entity>
+
+    <!-- Cámara con navegación libre, igual que en index.html -->
+    <a-entity id="camara" camera look-controls wasd-controls position="0 3 9"></a-entity>
+  </a-scene>
+
+  <div id="avisoError">
+    <div class="caja">
+      <h2>⚠️ No se pudo cargar el motor 3D (A-Frame)</h2>
+      <p>Revisa que <code>aframe.min.js</code> esté en la MISMA carpeta que este archivo, y que lo estés abriendo con Live Server (una URL <code>http://127.0.0.1:5500/...</code>), no con doble clic directo.</p>
+    </div>
+  </div>
+
+  <script>
+    if (typeof AFRAME === 'undefined') {
+      document.getElementById('avisoError').style.display = 'flex';
+    }
+
+    // Apenas termina de cargar la escena, se desvanece el fundido morado
+    // con el que arrancó esta página (efecto de "salir" del portal).
+    const escena = document.querySelector('a-scene');
+    const transicion = document.getElementById('transicionPortal');
+    const ocultarTransicion = () => transicion.classList.add('oculto');
+    if (escena.hasLoaded) {
+      ocultarTransicion();
+    } else {
+      escena.addEventListener('loaded', ocultarTransicion);
+    }
+    // Por si algún .glb tarda o falla en cargar, no deja la pantalla
+    // morada para siempre.
+    setTimeout(ocultarTransicion, 4000);
+
+    // Volver a la Arena 13, con el mismo fundido de salida.
+    document.getElementById('volver').addEventListener('click', () => {
+      transicion.classList.remove('oculto');
+      setTimeout(() => { window.location.href = 'index.html'; }, 700);
+    });
+
+    // ---------- Música de fondo ----------
+    // Los navegadores bloquean el audio con sonido hasta que la persona
+    // interactúa con la página. Aquí se intenta sonar sola apenas carga
+    // (algunos navegadores lo permiten si ya hubo una interacción previa,
+    // como el clic en el cofre que trajo hasta esta página); si el
+    // navegador la bloquea, se espera el primer clic o tecla en esta
+    // página para arrancarla.
+    const musica = document.getElementById('musicaArena');
+    const botonMusica = document.getElementById('botonMusica');
+
+    function intentarReproducir() {
+      musica.play().catch(() => {
+        const arrancarConInteraccion = () => {
+          musica.play().catch(() => {});
+          document.removeEventListener('click', arrancarConInteraccion);
+          document.removeEventListener('keydown', arrancarConInteraccion);
+        };
+        document.addEventListener('click', arrancarConInteraccion, { once: true });
+        document.addEventListener('keydown', arrancarConInteraccion, { once: true });
+      });
+    }
+    intentarReproducir();
+
+    botonMusica.addEventListener('click', () => {
+      musica.muted = !musica.muted;
+      botonMusica.textContent = musica.muted ? '🔇' : '🔊';
+      if (!musica.muted) intentarReproducir();
+    });
+  </script>
+</body>
+</html>
